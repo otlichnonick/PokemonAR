@@ -16,59 +16,64 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Set the view's delegate
         sceneView.delegate = self
-        
-        // Show statistics such as fps and timing information
         sceneView.showsStatistics = true
-        
-        // Create a new scene
-        let scene = SCNScene(named: "art.scnassets/ship.scn")!
-        
-        // Set the scene to the view
-        sceneView.scene = scene
+        sceneView.autoenablesDefaultLighting = true
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        // Create a session configuration
-        let configuration = ARWorldTrackingConfiguration()
+        let configuration = ARImageTrackingConfiguration()
+        
+        guard let imageToTrack = ARReferenceImage.referenceImages(inGroupNamed: "Photos", bundle: .main) else {
+            print("There no image to track")
+            return
+        }
+            configuration.trackingImages = imageToTrack
+            configuration.maximumNumberOfTrackedImages = 1
 
-        // Run the view's session
         sceneView.session.run(configuration)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         
-        // Pause the view's session
         sceneView.session.pause()
     }
 
     // MARK: - ARSCNViewDelegate
     
-/*
-    // Override to create and configure nodes for anchors added to the view's session.
     func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
         let node = SCNNode()
-     
+        
+        DispatchQueue.main.async {
+            guard let imageAnchor = anchor as? ARImageAnchor else {
+                print("False image anchor")
+                return
+            }
+            let plane = SCNPlane(width: imageAnchor.referenceImage.physicalSize.width,
+                                 height: imageAnchor.referenceImage.physicalSize.height)
+            plane.firstMaterial?.diffuse.contents = UIColor(white: 1.0, alpha: 0.5)
+            let planeNode = SCNNode(geometry: plane)
+            planeNode.eulerAngles.x = -.pi/2
+            
+            node.addChildNode(planeNode)
+                
+            guard let objectScene = SCNScene(named: "art.scnassets/kens-rage-mamiya.scn") else {
+                print("False object scene")
+                return
+            }
+            
+            guard let objectNode = objectScene.rootNode.childNodes.first else {
+                print("False object node")
+                return
+            }
+            
+            objectNode.eulerAngles.x = .pi/2
+            planeNode.addChildNode(objectNode)
+        }
+
         return node
-    }
-*/
-    
-    func session(_ session: ARSession, didFailWithError error: Error) {
-        // Present an error message to the user
-        
-    }
-    
-    func sessionWasInterrupted(_ session: ARSession) {
-        // Inform the user that the session has been interrupted, for example, by presenting an overlay
-        
-    }
-    
-    func sessionInterruptionEnded(_ session: ARSession) {
-        // Reset tracking and/or remove existing anchors if consistent tracking is required
-        
     }
 }
